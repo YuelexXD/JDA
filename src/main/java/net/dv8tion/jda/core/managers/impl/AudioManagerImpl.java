@@ -83,7 +83,7 @@ public class AudioManagerImpl implements AudioManager, Disposable
 
         if (!AUDIO_SUPPORTED)
             throw new UnsupportedOperationException("Sorry! Audio is disabled due to an internal JDA error! Contact Dev!");
-        if (!guild.equals(channel.getGuild()))
+        if (!channel.getGuild().equals(getGuild()))
             throw new IllegalArgumentException("The provided VoiceChannel is not a part of the Guild that this AudioManager handles." +
                     "Please provide a VoiceChannel from the proper Guild");
         if (!guild.isAvailable())
@@ -134,6 +134,7 @@ public class AudioManagerImpl implements AudioManager, Disposable
     {
         synchronized (CONNECTION_LOCK)
         {
+            checkDisposed();
             guild.getJDA().getClient().getQueuedAudioConnectionMap().remove(guild.getIdLong());
             this.queuedAudioConnection = null;
             if (audioConnection == null)
@@ -152,6 +153,7 @@ public class AudioManagerImpl implements AudioManager, Disposable
     @Override
     public Guild getGuild()
     {
+        checkDisposed();
         return guild;
     }
 
@@ -194,6 +196,7 @@ public class AudioManagerImpl implements AudioManager, Disposable
     @Override
     public void setSendingHandler(AudioSendHandler handler)
     {
+        checkDisposed();
         sendHandler = handler;
         if (audioConnection != null)
             audioConnection.setSendingHandler(handler);
@@ -208,6 +211,7 @@ public class AudioManagerImpl implements AudioManager, Disposable
     @Override
     public void setReceivingHandler(AudioReceiveHandler handler)
     {
+        checkDisposed();
         receiveHandler = handler;
         if (audioConnection != null)
             audioConnection.setReceivingHandler(handler);
@@ -294,6 +298,8 @@ public class AudioManagerImpl implements AudioManager, Disposable
 
     public void setAudioConnection(AudioConnection audioConnection)
     {
+        if (disposed)
+            return;
         this.audioConnection = audioConnection;
         if (audioConnection == null)
             return;
@@ -331,6 +337,8 @@ public class AudioManagerImpl implements AudioManager, Disposable
 
     protected void updateVoiceState()
     {
+        if (disposed)
+            return;
         if (isConnected() || isAttemptingToConnect())
         {
             VoiceChannel channel = isConnected() ? getConnectedChannel() : getQueuedAudioConnection();
